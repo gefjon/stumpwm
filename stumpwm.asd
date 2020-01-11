@@ -17,7 +17,9 @@
                #:clx
                #:sb-posix
                #-sb-thread
-               #:sb-thread-shim)
+               #:sb-thread-shim
+               #:sb-introspect)
+>>>>>>> 29d4490f3a84f6e7cac96df5c11600e4d9645893
   :components ((:file "package")
                (:file "primitives")
                (:file "wrappers")

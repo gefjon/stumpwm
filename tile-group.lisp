@@ -1071,6 +1071,13 @@ space."
 
 (defcommand-alias remove remove-split)
 
+(defun only-one-frame-p ()
+  "T if there is only one maximized frame in the current head.
+This can be used around a the \"only\" command to avoid the warning message."
+  (let* ((group (screen-current-group (current-screen)))
+         (head (current-head group)))
+    (atom (tile-group-frame-head group head))))
+
 (defcommand (only tile-group) () ()
   "Delete all the frames but the current one and grow it to take up the entire head."
   (let* ((screen (current-screen))
@@ -1078,7 +1085,7 @@ space."
          (win (group-current-window group))
          (head (current-head group))
          (frame (copy-frame head)))
-    (if (atom (tile-group-frame-head group head))
+    (if (only-one-frame-p)
         (message "There's only one frame.")
         (progn
           (mapc (lambda (w)
@@ -1124,10 +1131,12 @@ space."
   "Given a list of frames focus the next one in the list after
 the current frame."
   (let ((rest (cdr (member (tile-group-current-frame group) frames :test 'eq))))
-    (focus-frame group
-                 (if (null rest)
-                     (car frames)
-                     (car rest)))))
+    (if (only-one-frame-p)
+        (message "No other frames.")
+        (focus-frame group
+                     (if (null rest)
+                         (car frames)
+                         (car rest))))))
 
 (defun focus-next-frame (group)
   (focus-frame-after group (group-frames group)))
