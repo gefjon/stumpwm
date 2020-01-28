@@ -1131,7 +1131,7 @@ This can be used around a the \"only\" command to avoid the warning message."
   "Given a list of frames focus the next one in the list after
 the current frame."
   (let ((rest (cdr (member (tile-group-current-frame group) frames :test 'eq))))
-    (if (only-one-frame-p)
+    (if (= (length frames) 1)
         (message "No other frames.")
         (focus-frame group
                      (if (null rest)
@@ -1167,32 +1167,31 @@ select one. Returns the selected frame or nil if aborted."
   (let ((wins (progn
                 (draw-frame-outlines group)
                 (draw-frame-numbers group))))
-    (multiple-value-bind (has-click ch x y)
-        (read-one-char-or-click group)
-      (if has-click
-          (let ((winner))
-            (mapc #'xlib:destroy-window wins)
-            (clear-frame-outlines group)
-            ;; frame-width and frame-height are not updated in this
-            ;; context, so we need to loop through all of them until
-            ;; we find the most satisfying one.
-            (dolist (f (group-frames group))
-              (when (and (> x (frame-x f)) (> y (frame-y f)))
-                (if winner
-                    (when (or (> (frame-x f) (frame-x winner))
-                              (> (frame-y f) (frame-y winner)))
-                      (setf winner f))
-                    (setf winner f))))
-            (ungrab-pointer)
-            winner)
-          (when ch
-            (let ((num (read-from-string (string ch) nil nil)))
-              (dformat 3 "read ~S ~S~%" ch num)
-              (mapc #'xlib:destroy-window wins)
-              (clear-frame-outlines group)
-              (find ch (group-frames group)
-                    :test 'char=
-                    :key 'get-frame-number-translation)))))))
+    (unwind-protect
+         (multiple-value-bind (has-click ch x y)
+             (read-one-char-or-click group)
+           (if has-click
+               (let ((winner))
+                 ;; frame-width and frame-height are not updated in this
+                 ;; context, so we need to loop through all of them until
+                 ;; we find the most satisfying one.
+                 (dolist (f (group-frames group))
+                   (when (and (> x (frame-x f)) (> y (frame-y f)))
+                     (if winner
+                         (when (or (> (frame-x f) (frame-x winner))
+                                   (> (frame-y f) (frame-y winner)))
+                           (setf winner f))
+                         (setf winner f))))
+                 (ungrab-pointer)
+                 winner)
+               (when ch
+                 (let ((num (read-from-string (string ch) nil nil)))
+                   (dformat 3 "read ~S ~S~%" ch num)
+                   (find ch (group-frames group)
+                         :test 'char=
+                         :key 'get-frame-number-translation)))))
+      (mapc #'xlib:destroy-window wins)
+      (clear-frame-outlines group))))
 
 
 (defcommand (fselect tile-group) (frame-number) ((:frame t))
